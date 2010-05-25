@@ -4,6 +4,7 @@ gofluiddb
 
 GoFluidDB is an light wrapper for the FluidDB library in Go. 
 
+(Based on the Go Lang docs + library source and go-twitter)
 
 Installation
 ============
