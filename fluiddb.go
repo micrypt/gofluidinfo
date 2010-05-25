@@ -1,23 +1,158 @@
-package fluidb
+package fluiddb
 
 import (
-	"bufio"
-	"bytes"
-	"encoding/base64"
-	"http"
-	"io"
-	"json"
-	"os"
-	"net"
-//	"strconv"
-	"strings"
-	"sync"
-	"time"
+  "http"
+  "encoding/base64"
+  "io"
+  "os"
+  "strings"
+  "net"
+  "bufio"
+  "strconv"
+  "fmt"
+  "bytes"
 )
 
+type readClose struct {
+  io.Reader
+  io.Closer
+}
+
+type badStringError struct {
+  what string
+  str  string
+}
+
+func (e *badStringError) String() string { return fmt.Sprintf("%s %q", e.what, e.str) }
+
+// Given a string of the form "host", "host:port", or "[ipv6::address]:port",
+// return true if the string includes a port.
+func hasPort(s string) bool { return strings.LastIndex(s, ":") > strings.LastIndex(s, "]") }
+
+func send(req *http.Request) (resp *http.Response, err os.Error) {
+  addr := req.URL.Host
+  if !hasPort(addr) {
+    addr += ":http"
+  }
+  conn, err := net.Dial("tcp", "", addr)
+  if err != nil {
+    return nil, err
+  }
+
+  err = req.Write(conn)
+  if err != nil {
+    conn.Close()
+    return nil, err
+  }
+
+  reader := bufio.NewReader(conn)
+  resp, err = http.ReadResponse(reader, req.Method)
+  if err != nil {
+    conn.Close()
+    return nil, err
+  }
+
+  r := io.Reader(reader)
+  if v := resp.GetHeader("Content-Length"); v != "" {
+    n, err := strconv.Atoi64(v)
+    if err != nil {
+      return nil, &badStringError{"invalid Content-Length", v}
+    }
+    r = io.LimitReader(r, n)
+  }
+  resp.Body = readClose{r, conn}
+
+  return
+}
+
+func encodedUsernameAndPassword(user, pwd string) string {
+  bb := &bytes.Buffer{}
+  encoder := base64.NewEncoder(base64.StdEncoding, bb)
+  encoder.Write([]byte(user + ":" + pwd))
+  encoder.Close()
+  return bb.String()
+}
+
+func authGet(url, user, pwd string) (r *http.Response, err os.Error) {
+  var req http.Request
+
+  req.Header = map[string]string{"Authorization": "Basic " +
+    encodedUsernameAndPassword(user, pwd)}
+  if req.URL, err = http.ParseURL(url); err != nil {
+    return
+  }
+  if r, err = send(&req); err != nil {
+    return
+  }
+  return
+}
+
+
+// Post issues a POST to the specified URL.
+//
+// Caller should close r.Body when done reading it.
+func authPost(url, user, pwd, client, clientURL, version, agent, bodyType string,
+              body io.Reader) (r *http.Response, err os.Error) {
+  var req http.Request
+  req.Method = "POST"
+  req.Body = body.(io.ReadCloser)
+  req.Header = map[string]string{
+    "Content-Type":         bodyType,
+    "Transfer-Encoding":    "chunked",
+    "User-Agent":           agent,
+    "X-FluidDB-Client":     client,
+    "X-FluidDB-Client-URL": clientURL,
+    "X-FluidDB-Version":    version,
+    "Authorization": "Basic " + encodedUsernameAndPassword(user, pwd),
+  }
+
+  req.URL, err = http.ParseURL(url)
+  if err != nil {
+    return nil, err
+  }
+
+  return send(&req)
+}
+
+// Do an authenticated Get if we've called Authenticated, otherwise
+// just Get it without authentication
+func httpGet(url, user, pass string) (*http.Response, string, os.Error) {
+  var r *http.Response
+  var full string = ""
+  var err os.Error
+
+  if user != "" && pass != "" {
+    r, err = authGet(url, user, pass)
+  } else {
+    r, full, err = http.Get(url)
+  }
+
+  return r, full, err
+}
+
+// Do an authenticated Post if we've called Authenticated, otherwise
+// just Post it without authentication
+func httpPost(url, user, pass, client, clientURL, version, agent,
+              data string) (*http.Response, os.Error) {
+  var r *http.Response
+  var err os.Error
+
+  body := bytes.NewBufferString(data)
+  bodyType := "application/x-www-form-urlencoded"
+
+  if user != "" && pass != "" {
+    r, err = authPost(url, user, pass, client, clientURL,
+      version, agent, bodyType, body)
+  } else {
+    r, err = http.Post(url, bodyType, body)
+  }
+
+  return r, err
+}
+
 const (
-	DEFAULT_CLIENT         = "gofluiddb"
-	DEFAULT_CLIENT_URL     = "http://github.com/micrypt/gofluiddb"
+	DEFAULT_CLIENT         = "GoFluidDB"
+	DEFAULT_CLIENT_URL     = "http://github.com/micrypt/GoFluidDB"
 	DEFAULT_CLIENT_VERSION = "0.1"
 	DEFAULT_USER_AGENT     = "gofluiddb"
 	ERROR                  = "GoFluidDB Error: "
@@ -31,213 +166,43 @@ const (
 	PRIMITIVE_CONTENT_TYPE = "application/vnd.fluiddb.value+json"
 	HEADER_ERROR           = "X-FluidDB-Error-Class"
 	HEADER_REQUEST_ID      = "X-FluidDB-Request-Id"
+    FLUIDDB_PATH    = "http://fluiddb.fluidinfo.com"
+    SANDBOX_PATH    = "http://sandbox.fluidinfo.com"
 )
 
-//var FLUIDDB_PATH, _ = http.ParseURL("http://fluiddb.fluidinfo.com")
-var FLUIDDB_PATH, _ = http.ParseURL("http://sandbox.fluidinfo.com")
-//var SANDBOX_PATH, _ = http.ParseURL("http://sandbox.fluidinfo.com")
-
-
-type Object struct {
-	Id   string
-	Body   []string
-	Tags map[string]byte
-}
-
-type Response struct {
-	Header string
-    Object Object
-}
-
-
-type Api struct {
-	clientConn *http.ClientConn
-	url        *http.URL
-	FluidDBStream     chan Response
-	authData   string
-	postData   string
-    method     string
-	stale      bool
-}
-
-func (self *Api) Close() {
-	self.stale = true
-	tcpConn, _ := self.clientConn.Close()
-	if tcpConn != nil {
-		tcpConn.Close()
-	}
-}
-
-func (self *Api) connect(HttpMethod string) (*http.Response, os.Error) {
-	tcpConn, err := net.Dial("tcp", "", self.url.Host+":80")
-	if err != nil {
-		return nil, err
-	}
-	self.clientConn = http.NewClientConn(tcpConn, nil)
-
-	var req http.Request
-	req.URL = self.url
-	req.Method = HttpMethod
-	req.Header = map[string]string{}
-	req.Header["Authorization"] = "Basic " + self.authData
-
-	if self.postData != "" {
-		req.Method = "POST"
-		req.Body = nopCloser{bytes.NewBufferString(self.postData)}
-		req.ContentLength = int64(len(self.postData))
-		req.Header["Content-Type"] = "application/x-www-form-urlencoded"
-	}
-
-	err = self.clientConn.Write(&req)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := self.clientConn.Read()
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func (self *Api) readFluidDBStream(resp *http.Response) {
-	var reader *bufio.Reader
-	reader = bufio.NewReader(resp.Body)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			//we've been closed
-			if self.stale {
-				return
-			}
-
-			//otherwise, reconnect
-			resp, err := self.connect(self.method)
-			if err != nil {
-				println(err.String())
-				time.Sleep(RETRY_TIMEOUT)
-				continue
-			}
-
-			if resp.StatusCode != 200 {
-				continue
-			}
-
-			reader = bufio.NewReader(resp.Body)
-			continue
-		}
-		line = strings.TrimSpace(line)
-
-		if len(line) == 0 {
-			continue
-		}
-
-		var Response Response
-		json.Unmarshal(line, &Response)
-
-		self.FluidDBStream <- Response
-	}
-}
-
-
 type Client struct {
-	Username string
-	Password string
-	FluidDBStream   chan Response
-	conn     *Api
-	connLock *sync.Mutex
+	Username    string
+	Password    string
+    URL         string
+	Client      string
+    ClientURL   string
+    Version     string
+    Agent       string
 }
 
 func NewClient(username, password string) *Client {
-	return &Client{username, password, make(chan Response), nil, new(sync.Mutex)}
+	return &Client{username, password, SANDBOX_PATH, DEFAULT_CLIENT, DEFAULT_CLIENT_URL, DEFAULT_CLIENT_VERSION, DEFAULT_USER_AGENT}
 }
 
-func encodedAuth(user, pwd string) string {
-	var buf bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	encoder.Write([]byte(user + ":" + pwd))
-	encoder.Close()
-	return buf.String()
-}
+func (self *Client) Call(method, url, data string) (*http.Response, os.Error) {
 
-type nopCloser struct {
-	io.Reader
-}
+    method = strings.ToUpper(method)
 
-func (nopCloser) Close() os.Error { return nil }
+    url = self.URL + url
 
-func (c *Client) connect(url *http.URL, HttpMethod, body string) (err os.Error) {
-	if c.Username == "" || c.Password == "" {
-		return os.NewError("The username or password is invalid")
-	}
+    var resp *http.Response
+    var err os.Error
 
-	c.connLock.Lock()
-	var resp *http.Response
-	//initialize the new FluidDBStream
-	var sc Api
+    switch method {
+        case "GET":
+                    resp, _ , err = httpGet(url, self.Username, self.Password)
+        case "POST":
+                    resp, err = httpPost(url, self.Username, self.Password, self.Client, self.ClientURL, self.Version, self.Agent, data)
+        default:        
+                return nil, &badStringError{ ERROR, "Incorrect method"}
 
-	sc.authData = encodedAuth(c.Username, c.Password)
-    sc.method = HttpMethod
-
-    if len(body) != 0 {
-	    sc.postData = body
     }
+    
+    return resp, err
 
-	sc.url = url
-	resp, err = sc.connect(sc.method)
-	if err != nil {
-		goto Return
-	}
-
-	if resp.StatusCode != 200 {
-		err = os.NewError("FluidDB HTTP Error" + resp.Status)
-		goto Return
-	}
-
-	//close the current connection
-	if c.conn != nil {
-		c.conn.Close()
-	}
-
-	c.conn = &sc
-	sc.FluidDBStream = c.FluidDBStream
-	go sc.readFluidDBStream(resp)
-
-Return:
-	c.connLock.Unlock()
-	return
-}
-
-// GET function
-func (c *Client) HttpGet(url string) os.Error {
-
-    new_url, _ := http.ParseURL( FLUIDDB_PATH.String() + url);
-	return c.connect(new_url, "GET", "")
-}
-
-// POST function
-func (c *Client) HttpPost(url, body string) os.Error {
-
-//	var body bytes.Buffer
-//	body.WriteString("*****")
-
-    new_url, _ := http.ParseURL(FLUIDDB_PATH.String() + url);
-	return c.connect(new_url, "POST", body)
-}
-
-// PUT function
-func (c *Client) HttpPut(url, body string) os.Error {
-
-    new_url, _ := http.ParseURL(FLUIDDB_PATH.String() + url);
-	return c.connect(new_url, "PUT", body)
-}
-
-// Close the client
-func (c *Client) Close() {
-	//has it already been closed?
-	if c.conn.stale {
-		return
-	}
-	c.conn.Close()
 }
