@@ -17,7 +17,7 @@ Quick Start
 
 (I am considering adding HTTP Method specific calls as Go discourages default method parameters so it's hard to do something like default=None on otherwise empty fields)
 
-url := "/users/esteve"
+url := "/users/username"
 
 myclient := fluiddb.NewClient("test","test")
 
