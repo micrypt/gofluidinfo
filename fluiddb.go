@@ -171,10 +171,10 @@ const (
 )
 
 type Client struct {
-	Username    string
-	Password    string
+    Username    string
+    Password    string
     URL         string
-	Client      string
+    Client      string
     ClientURL   string
     Version     string
     Agent       string
@@ -187,7 +187,6 @@ func NewClient(username, password string) *Client {
 func (self *Client) Call(method, url, data string) (*http.Response, os.Error) {
 
     method = strings.ToUpper(method)
-
     url = self.URL + url
 
     var resp *http.Response
