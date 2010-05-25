@@ -2,7 +2,7 @@
 gofluiddb
 ============
 
-GoFluidDB is an light wrapper for the FluidDB library in Go. 
+GoFluidDB is an light wrapper for the FluidDB API in Go. 
 
 (Based on the Go Lang docs + library source and go-twitter)
 
