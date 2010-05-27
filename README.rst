@@ -14,8 +14,8 @@ For now include in your project directory and import "./fluiddb"
 Quick Start
 ===========
 
-1) Create a url to run the request against
-2) Create a client and run the Call method 
+- Create a url to run the request against
+- Create a client and run the desired HTTP method 
 
 url := "/users/username"
 
