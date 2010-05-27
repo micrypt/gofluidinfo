@@ -1,3 +1,5 @@
+//Example call using the fluiddb package
+
 package main
 
 import (
@@ -10,7 +12,8 @@ import (
 
 func main() {
 
-url := "/users/username"
+// Call to url pattern "/users/username"
+url := "/users/test"
 
 myclient := fluiddb.NewClient("test","test")
 
