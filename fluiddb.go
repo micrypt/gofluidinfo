@@ -399,7 +399,7 @@ func (self *Client) Delete( url string) (*http.Response, os.Error) {
     var resp *http.Response
     var err os.Error
 
-    resp, err = authDelete(url, self.Username, self.Password)
+    resp, err = httpDelete(url, self.Username, self.Password)
     
     return resp, err
 
@@ -412,7 +412,7 @@ func (self *Client) Head( url string) (*http.Response, os.Error) {
     var resp *http.Response
     var err os.Error
 
-    resp, err = authHead(url, self.Username, self.Password)
+    resp, err = httpHead(url, self.Username, self.Password)
     
     return resp, err
 
