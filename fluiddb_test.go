@@ -5,7 +5,6 @@ package main
 import (
 "fmt"
 "./fluiddb"
-//"http"
 "io/ioutil"
 "log"
 )
