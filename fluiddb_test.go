@@ -4,9 +4,9 @@ package main
 
 import (
 "fmt"
-"./fluiddb"
 "io/ioutil"
 "log"
+"./fluiddb"
 )
 
 func main() {
