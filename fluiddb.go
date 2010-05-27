@@ -327,28 +327,6 @@ func NewClient(username, password string) *Client {
 	return &Client{username, password, SANDBOX_PATH, DEFAULT_CLIENT, DEFAULT_CLIENT_URL, DEFAULT_CLIENT_VERSION, DEFAULT_USER_AGENT}
 }
 
-func (self *Client) Call(method, url, data string) (*http.Response, os.Error) {
-
-    method = strings.ToUpper(method)
-    url = self.URL + url
-
-    var resp *http.Response
-    var err os.Error
-
-    switch method {
-        case "GET":
-                    resp, _ , err = httpGet(url, self.Username, self.Password)
-        case "POST":
-                    resp, err = httpPost(url, self.Username, self.Password, self.Client, self.ClientURL, self.Version, self.Agent, data)
-        default:        
-                return nil, &badStringError{ ERROR, "Incorrect method"}
-
-    }
-    
-    return resp, err
-
-}
-
 func (self *Client) SetActiveMode() {
     self.URL = FLUIDDB_PATH
 }
