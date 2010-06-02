@@ -24,11 +24,11 @@ myclient := fluiddb.NewClient("test","test")
 
 - Call the desired HTTP method. Returns http.Response and os.Error 
 
-r, err myclient.Get(url)
+r, err := myclient.Get(url)
 
 or
 
-r, err myclient.Post(url, data)
+r, err := myclient.Post(url, data)
 
 Matching client methods for the request methods supported by FluidDB (GET, POST, PUT, DELETE & HEAD) are included.
 
