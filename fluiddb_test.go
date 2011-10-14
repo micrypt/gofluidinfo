@@ -25,7 +25,7 @@ func main() {
     }
 
     if err != nil {
-        log.Stderr(err)
+        log.Fatal(err)
     } else {
         fmt.Println(string(b))
     }
