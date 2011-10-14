@@ -56,7 +56,7 @@ func send(req *http.Request) (resp *http.Response, err os.Error) {
   if !hasPort(addr) {
     addr += ":http"
   }
-  conn, err := net.Dial("tcp", "", addr)
+  conn, err := net.Dial("tcp", addr)
   if err != nil {
     return nil, err
   }
@@ -68,17 +68,17 @@ func send(req *http.Request) (resp *http.Response, err os.Error) {
   }
 
   reader := bufio.NewReader(conn)
-  resp, err = http.ReadResponse(reader, req.Method)
+  resp, err = http.ReadResponse(reader, req)
   if err != nil {
     conn.Close()
     return nil, err
   }
 
   r := io.Reader(reader)
-  if v := resp.GetHeader("Content-Length"); v != "" {
-    n, err := strconv.Atoi64(v)
+  if v := resp.Header["Content-Length"]; v != nil {
+    n, err := strconv.Atoi64(v[0])
     if err != nil {
-      return nil, &badStringError{"invalid Content-Length", v}
+      return nil, &badStringError{"invalid Content-Length", v[0]}
     }
     r = io.LimitReader(r, n)
   }
@@ -113,8 +113,8 @@ func UrlEncode(urlmap map[string]string) (string) {
 func authGet(url, user, pwd string) (r *http.Response, err os.Error) {
   var req http.Request
   req.Method = "GET"
-  req.Header = map[string]string{"Authorization": "Basic " +
-    encodedUsernameAndPassword(user, pwd)}
+  req.Header = map[string][]string{"Authorization": {"Basic " +
+    encodedUsernameAndPassword(user, pwd)} }
   if req.URL, err = http.ParseURL(url); err != nil {
     return
   }
@@ -132,14 +132,14 @@ func authPost(url, user, pwd, client, clientURL, version, agent, bodyType string
   var req http.Request
   req.Method = "POST"
   req.Body = body.(io.ReadCloser)
-  req.Header = map[string]string{
-    "Content-Type":         bodyType,
-    "Transfer-Encoding":    "chunked",
-    "User-Agent":           agent,
-    "X-FluidDB-Client":     client,
-    "X-FluidDB-Client-URL": clientURL,
-    "X-FluidDB-Version":    version,
-    "Authorization": "Basic " + encodedUsernameAndPassword(user, pwd),
+  req.Header = map[string][]string{
+    "Content-Type":         {bodyType},
+    "Transfer-Encoding":    {"chunked"},
+    "User-Agent":           {agent},
+    "X-FluidDB-Client":     {client},
+    "X-FluidDB-Client-URL": {clientURL},
+    "X-FluidDB-Version":    {version},
+    "Authorization": {"Basic " + encodedUsernameAndPassword(user, pwd)},
   }
 
   req.URL, err = http.ParseURL(url)
@@ -160,23 +160,23 @@ func authPut(url, user, pwd, client, clientURL, version, agent, bodyType string,
   req.Method = "PUT"
   req.Body = body.(io.ReadCloser)
   if user != "" && pwd != "" {
-      req.Header = map[string]string{
-        "Content-Type":         bodyType,
-        "Transfer-Encoding":    "chunked",
-        "User-Agent":           agent,
-        "X-FluidDB-Client":     client,
-        "X-FluidDB-Client-URL": clientURL,
-        "X-FluidDB-Version":    version,
-        "Authorization": "Basic " + encodedUsernameAndPassword(user, pwd),
+      req.Header = map[string][]string{
+        "Content-Type":         {bodyType},
+        "Transfer-Encoding":    {"chunked"},
+        "User-Agent":           {agent},
+        "X-FluidDB-Client":     {client},
+        "X-FluidDB-Client-URL": {clientURL},
+        "X-FluidDB-Version":    {version},
+        "Authorization": {"Basic " + encodedUsernameAndPassword(user, pwd)},
       }
   } else {
-      req.Header = map[string]string{
-        "Content-Type":         bodyType,
-        "Transfer-Encoding":    "chunked",
-        "User-Agent":           agent,
-        "X-FluidDB-Client":     client,
-        "X-FluidDB-Client-URL": clientURL,
-        "X-FluidDB-Version":    version,
+      req.Header = map[string][]string{
+        "Content-Type":         {bodyType},
+        "Transfer-Encoding":    {"chunked"},
+        "User-Agent":           {agent},
+        "X-FluidDB-Client":     {client},
+        "X-FluidDB-Client-URL": {clientURL},
+        "X-FluidDB-Version":    {version},
       }
   }
 
@@ -193,8 +193,8 @@ func authDelete(url, user, pwd string) (r *http.Response, err os.Error) {
   var req http.Request
   req.Method = "DELETE"
   if user != "" && pwd != "" {
-      req.Header = map[string]string{"Authorization": "Basic " +
-        encodedUsernameAndPassword(user, pwd)}
+      req.Header = map[string][]string{"Authorization": {"Basic " +
+        encodedUsernameAndPassword(user, pwd)} }
   }
   if req.URL, err = http.ParseURL(url); err != nil {
     return
@@ -210,8 +210,8 @@ func authHead(url, user, pwd string) (r *http.Response, err os.Error) {
   var req http.Request
   req.Method = "HEAD"
   if user != "" && pwd != "" {
-      req.Header = map[string]string{"Authorization": "Basic " +
-        encodedUsernameAndPassword(user, pwd)}
+      req.Header = map[string][]string{"Authorization": {"Basic " +
+        encodedUsernameAndPassword(user, pwd)} }
   }
   if req.URL, err = http.ParseURL(url); err != nil {
     return
@@ -232,7 +232,7 @@ func httpGet(url, user, pwd string) (*http.Response, string, os.Error) {
   if user != "" && pwd != "" {
     r, err = authGet(url, user, pwd)
   } else {
-    r, full, err = http.Get(url)
+    r, err = http.Get(url)
   }
 
   return r, full, err
