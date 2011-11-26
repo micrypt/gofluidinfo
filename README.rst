@@ -18,7 +18,7 @@ Quick Start
 
 url := "/users/username"
 
-- Create a client by passing in username and password string (empty strings for unauthenticated calls)/
+- Create a client by passing in username and password string (empty strings for unauthenticated calls)
 
 myclient := fluidinfo.NewClient("test","test")
 
