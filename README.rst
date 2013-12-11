@@ -16,19 +16,19 @@ Quick Start
 
 - Create a url to run the request against.
 
-url := "/users/username"
+`url := "/users/username"`
 
 - Create a client by passing in username and password string (empty strings for unauthenticated calls)
 
-myclient := fluidinfo.NewClient("test","test")
+`myclient := fluidinfo.NewClient("test","test")`
 
 - Call the desired HTTP method. Returns http.Response and os.Error 
 
-r, err := myclient.Get(url)
+`r, err := myclient.Get(url)`
 
 or
 
-r, err := myclient.Post(url, data)
+`r, err := myclient.Post(url, data)`
 
 Matching client methods for the request methods supported by fluidinfo (GET, POST, PUT, DELETE & HEAD) are included.
 
