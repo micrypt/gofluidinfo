@@ -92,9 +92,8 @@ func encodedUsernameAndPassword(user, pwd string) string {
 	return bb.String()
 }
 
-// Naive utility url encode method.  Converts a string map into a query string
-//
-// Returns a string in the format "?param1=value1&param2=value2"
+// Naive utility url encode method.  Converts a string map into a query string and
+// returns a string in the format "?param1=value1&param2=value2"
 func UrlEncode(urlmap map[string]string) string {
 	url_ := "?"
 	var temp []string
@@ -121,7 +120,6 @@ func authGet(url_, user, pwd string) (r *http.Response, err error) {
 }
 
 // Post issues a POST to the specified URL.
-//
 // Caller should close r.Body when done reading it.
 func authPost(url_, user, pwd, client, clientURL, version, agent, bodyType string,
 	body io.Reader) (r *http.Response, err error) {
@@ -147,7 +145,6 @@ func authPost(url_, user, pwd, client, clientURL, version, agent, bodyType strin
 }
 
 // Put issues a PUT to the specified URL.
-//
 // Caller should close r.Body when done reading it.
 func authPut(url_, user, pwd, client, clientURL, version, agent, bodyType string,
 	body io.Reader) (r *http.Response, err error) {
@@ -218,7 +215,7 @@ func authHead(url_, user, pwd string) (r *http.Response, err error) {
 }
 
 // Do an authenticated Get if we've called Authenticated, otherwise
-// just Get it without authentication
+// just Get it without authentication.
 func httpGet(url_, user, pwd string) (*http.Response, string, error) {
 	var r *http.Response
 	var full string = ""
@@ -232,7 +229,7 @@ func httpGet(url_, user, pwd string) (*http.Response, string, error) {
 }
 
 // Do an authenticated Post if we've called Authenticated, otherwise
-// just Post it without authentication
+// just Post it without authentication.
 func httpPost(url_, user, pwd, client, clientURL, version, agent,
 	data string) (*http.Response, error) {
 	var r *http.Response
@@ -248,7 +245,7 @@ func httpPost(url_, user, pwd, client, clientURL, version, agent,
 	return r, err
 }
 
-// Do an authenticated Put
+// Do an authenticated Put.
 func httpPut(url_, user, pwd, client, clientURL, version, agent,
 	data string) (*http.Response, error) {
 	var r *http.Response
@@ -260,7 +257,7 @@ func httpPut(url_, user, pwd, client, clientURL, version, agent,
 	return r, err
 }
 
-// Do an authenticated Delete
+// Do an authenticated Delete.
 func httpDelete(url_, user, pwd string) (*http.Response, error) {
 	var r *http.Response
 	var err error
@@ -268,7 +265,7 @@ func httpDelete(url_, user, pwd string) (*http.Response, error) {
 	return r, err
 }
 
-// Do an authenticated Head
+// Do an authenticated Head.
 func httpHead(url_, user, pwd string) (*http.Response, error) {
 	var r *http.Response
 	var err error
@@ -277,23 +274,22 @@ func httpHead(url_, user, pwd string) (*http.Response, error) {
 }
 
 const (
-	DEFAULT_CLIENT         = "gofluidinfo"
-	DEFAULT_CLIENT_URL     = "http://github.com/micrypt/gofluidinfo"
-	DEFAULT_CLIENT_VERSION = "0.1"
-	DEFAULT_USER_AGENT     = "gofluidinfo"
-	ERROR                  = "gofluidinfo Error: "
-	WARNING                = "gofluidinfo Warning: "
-	DEFAULT_PORT           = 80
-	SECURE_PORT            = 443
-	UNIX_CREDENTIALS_FILE  = ".fluidinfocredentials"
-	// Here's hoping there's a stable Go port to the Windows platform sometime in the future.
-	// WINDOWS_CREDENTIALS_FILE    = "fluidinfocredentials.ini"
-	RETRY_TIMEOUT          = 5e9 // unlikely the user will choose this
-	PRIMITIVE_CONTENT_TYPE = "application/vnd.fluidinfo.value+json"
-	HEADER_ERROR           = "X-Fluidinfo-Error-Class"
-	HEADER_REQUEST_ID      = "X-Fluidinfo-Request-Id"
-	FLUIDINFO_PATH         = "http://fluiddb.fluidinfo.com"
-	SANDBOX_PATH           = "http://sandbox.fluidinfo.com"
+	DEFAULT_CLIENT           = "gofluidinfo"
+	DEFAULT_CLIENT_URL       = "http://github.com/micrypt/gofluidinfo"
+	DEFAULT_CLIENT_VERSION   = "0.1"
+	DEFAULT_USER_AGENT       = "gofluidinfo"
+	ERROR                    = "gofluidinfo Error: "
+	WARNING                  = "gofluidinfo Warning: "
+	DEFAULT_PORT             = 80
+	SECURE_PORT              = 443
+	UNIX_CREDENTIALS_FILE    = ".fluidinfocredentials"
+	WINDOWS_CREDENTIALS_FILE = "fluidinfocredentials.ini"
+	RETRY_TIMEOUT            = 5e9
+	PRIMITIVE_CONTENT_TYPE   = "application/vnd.fluidinfo.value+json"
+	HEADER_ERROR             = "X-Fluidinfo-Error-Class"
+	HEADER_REQUEST_ID        = "X-Fluidinfo-Request-Id"
+	FLUIDINFO_PATH           = "http://fluiddb.fluidinfo.com"
+	SANDBOX_PATH             = "http://sandbox.fluidinfo.com"
 )
 
 type Client struct {
