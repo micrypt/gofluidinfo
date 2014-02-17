@@ -1,5 +1,3 @@
-//Example call using the fluidinfo package
-
 package fluidinfo
 
 import (
