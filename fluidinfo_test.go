@@ -1,33 +1,25 @@
 //Example call using the fluidinfo package
 
-package main
+package fluidinfo
 
 import (
-	"fmt"
-	"github.com/micrypt/gofluidinfo/fluidinfo"
 	"io/ioutil"
-	"log"
+	"testing"
 )
 
-func main() {
-
-	// Call to url pattern "/users/username"
+func TestUser(t *testing.T) {
+	// URL pattern is "/users/username"
 	url := "/users/test"
-
-	myclient := fluidinfo.NewClient("test", "test")
-
+	myclient := NewClient("test", "test")
 	r, err := myclient.Get(url)
-
-	var b []byte
-	if err == nil {
-		b, err = ioutil.ReadAll(r.Body)
-		r.Body.Close()
-	}
-
+	defer r.Body.Close()
 	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println(string(b))
+		t.Errorf("TestUser failed %v", err)
 	}
-
+	var b []byte
+	b, err = ioutil.ReadAll(r.Body)
+	if err != nil {
+		t.Errorf("TestUser failed %v", err)
+	}
+	t.Logf("Test user passed %s", b)
 }
