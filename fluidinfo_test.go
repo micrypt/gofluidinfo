@@ -8,7 +8,7 @@ import (
 )
 
 func TestUser(t *testing.T) {
-	// URL pattern is "/users/username"
+	// Attempt to retrieve a user account
 	url := "/users/test"
 	myclient := NewClient("test", "test")
 	r, err := myclient.Get(url)
