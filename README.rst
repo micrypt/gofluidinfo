@@ -1,4 +1,4 @@
-gofluidinfo
+go-fluidinfo
 ============
 
 gofluidinfo is an light wrapper for the Fluidinfo API in Go. 
@@ -7,8 +7,8 @@ gofluidinfo is an light wrapper for the Fluidinfo API in Go.
 
 Installation
 ============
-Make files coming soon. 
-For now include in your project directory and import "./fluidinfo"
+`go get github.com/micrypt/gofluidinfo/fluidinfo`
+
 
 Quick Start
 ===========
