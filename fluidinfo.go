@@ -70,19 +70,6 @@ func encodedUsernameAndPassword(user, pwd string) string {
 	return bb.String()
 }
 
-// Naive utility url encode method.  Converts a string map into a query string and
-// returns a string in the format "?param1=value1&param2=value2"
-func UrlEncode(urlmap map[string]string) string {
-	url_ := "?"
-	var temp []string
-	var key, value string
-	for key, value = range urlmap {
-		temp = append(temp, key+"="+value)
-	}
-	url_ += strings.Join(temp, "&")
-	return url_
-}
-
 func authGet(url_, user, pwd string) (r *http.Response, err error) {
 	var req http.Request
 	req.Method = "GET"
