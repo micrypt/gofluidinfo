@@ -1,3 +1,5 @@
+Note: Unmaintained software. Approach with caution.
+
 go-fluidinfo
 ============
 
